@@ -5,6 +5,7 @@
 import requests
 import os
 import urllib.parse as urlparse
+import youtube_dl
 from bs4 import BeautifulSoup
 
 '''
@@ -13,7 +14,10 @@ from bs4 import BeautifulSoup
     :session_request the_session 
     :folder folder to save
 '''
-def download_file(url, session_request, folder):
+
+videos_dir = "Videos"
+
+def download_file(url, session_request,folder,num):
     r = session_request.get(url, stream=True)
     url = r.url
     parsed = urlparse.urlparse(url)
@@ -25,20 +29,34 @@ def download_file(url, session_request, folder):
         base_filename, file_extension = os.path.splitext(save_path)
         base_filename += str(index)
         save_path = base_filename + file_extension
-        index += 1
-
+   
     print("Downloading ...: " + local_filename)
 
-    with open(save_path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
+    #with open(save_path, 'wb') as f:
+    #    for chunk in r.iter_content(chunk_size=1024):
+    #        if chunk: # filter out keep-alive new chunks
+    #            f.write(chunk)
+	
+    if num < 10:
+      count = "0%s" % str(num)
+    else: 
+      count = str(num)
+		
+    ydl_options = {
+        'outtmpl': "%s/%s/%s-%s" % (videos_dir,folder,count,local_filename),
+        'external_downloader': 'aria2c'
+	}
+    
+    ydl = youtube_dl.YoutubeDL(ydl_options)
+
+    with ydl:
+        result = ydl.extract_info(url)
 
     return local_filename
 
 # Take all inputs
-userEmail = input("Login Email: ")
-userPassword = input("Password: ")
+userEmail = os.environ.get("EMAIL")
+userPassword = os.environ.get("PASSWORD")
 course_page = input("Full URL: ")
 
 
@@ -76,9 +94,12 @@ course_title = soup2.find("h1", {
 course_title = course_title.text.strip().replace(" ", "_")
 print("Course title: " + course_title)
 
+if not os.path.exists(videos_dir):
+    os.makedirs(videos_dir)
+
 # Create folder to store videos
-if not os.path.exists(course_title):
-    os.makedirs(course_title)
+if not os.path.exists(videos_dir + "/" +course_title):
+    os.makedirs(videos_dir + "/" + course_title)
     print("Directory created: " + course_title)
 
 episodes = soup2.find_all("li", {
@@ -102,12 +123,10 @@ for episode in episodes:
     })
     # print(download_link.get("href"))
     url = "https://laracasts.com" + download_link.get("href")
-    filename = download_file(url, session_requests, course_title)
+    filename = download_file(url, session_requests, course_title,i)
     print(str(i) + ". " + filename + "......Downloaded ")
     i += 1
 
 # Download finished .. Now zip the folder
-http_dir = "/var/www/html/" + course_title + ".zip"
-os.system("zip -r " + http_dir + " " + course_title)
-print("=====> " + course_title + " is Downloaded in " + http_dir)
+print("=====> " + course_title + " downloaded!! <======")
 
