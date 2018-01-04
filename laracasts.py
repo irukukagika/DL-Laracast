@@ -31,11 +31,6 @@ def download_file(url, session_request,folder,num):
         save_path = base_filename + file_extension
    
     print("Downloading ...: " + local_filename)
-
-    #with open(save_path, 'wb') as f:
-    #    for chunk in r.iter_content(chunk_size=1024):
-    #        if chunk: # filter out keep-alive new chunks
-    #            f.write(chunk)
 	
     if num < 10:
       count = "0%s" % str(num)
@@ -55,10 +50,9 @@ def download_file(url, session_request,folder,num):
     return local_filename
 
 # Take all inputs
-userEmail = os.environ.get("EMAIL")
-userPassword = os.environ.get("PASSWORD")
+userEmail = os.environ.get("EMAIL") 
+userPassword = os.environ.get("PASSWORD") 
 course_page = input("Full URL: ")
-
 
 login_url = "https://laracasts.com/login"
 session_requests = requests.session()
